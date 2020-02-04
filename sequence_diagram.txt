@@ -1,0 +1,26 @@
+# Sequence diagram for the README
+# To regenerate, use https://bramp.github.io/js-sequence-diagrams/
+
+Title: Choir usage example
+
+participant example.com as dest [color="red"]
+participant User as user [color="blue"]
+participant Recursive resolver as resolver
+participant Metrics server as metrics [color="green"]
+
+# DNS lookup
+user->resolver: dns:example.com?
+resolver->user: {IP of example.com}
+
+# Connection attempt
+user->dest: Connection attempt
+dest-->>user: Connection reset [color="red"]
+
+# Choir report
+user->resolver: dns:rst.q.us.20200202.\nexample.com.metrics.example?
+Note left of resolver: The resolver already knows\nthat the user accessed\nexample.com, so this\nquery does not disclose\nadditional sensitive\ninformation.
+resolver->metrics: dns:rst.q.us.20200202.\nexample.com.metrics.example?
+Note left of metrics: Report is recorded here.\nThe metrics server only\nobserves the resolver's\nIP address, not the user's. [color="green"]
+metrics->resolver: NXDOMAIN
+resolver->user: NXDOMAIN
+Note left of user: Response is ignored [color="blue"]

@@ -1,0 +1,13 @@
+// UML generator code for use with nomnoml (www.nomnoml.com)
+
+[Report|key Key|values \[\]string]
+[Key|domain string|date string|country string]
+[Reporter||Report(domain string, values \[\]string)]
+[Receiver||ParseReport(name string) -> Report|Filter(in <-chan Report, threshold int) <-chan Report]
+
+[Domain]->[Reporter]
+[Values]->[Reporter]
+[Reporter]->[send()|A caller-provided function;that uses the recursive resolver.]
+[send()]->[Receiver]
+[Receiver]->[Report]
+[Report]-->[Key]
