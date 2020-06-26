@@ -83,29 +83,31 @@ func (s udpDNSReportSender) Send(r choir.Report) error {
 	log.Printf("Querying %s via %s\n", name, s.serverAddress)
 	c, err := net.Dial("udp", s.serverAddress)
 	if err != nil {
-		log.Fatal("Failed to reach resolver:", err)
+		return fmt.Errorf("Failed to reach resolver: %w", err)
 	}
+	defer c.Close()
+
 	if _, err := c.Write(query); err != nil {
-		log.Printf("Warning: Query failed: %v", err)
-	} else {
-		var buf [4096]byte
-		c.SetReadDeadline(time.Now().Add(5 * time.Second))
-		n, err := c.Read(buf[:])
-		if err != nil {
-			log.Printf("Reading response failed: %v", err)
-		} else {
-			var msg dnsmessage.Message
-			if err := msg.Unpack(buf[:n]); err != nil {
-				log.Printf("Bad response: %v", err)
-			} else if msg.Header.RCode != dnsmessage.RCodeNameError {
-				// We expect an NXDOMAIN response.  Anything else is surprising.
-				log.Printf("Unexpected response: %v", msg.Header.RCode)
-			} else {
-				log.Printf("Report complete")
-			}
-		}
+		return fmt.Errorf("Query failed: %w", err)
 	}
-	c.Close()
+
+	var buf [4096]byte
+	c.SetReadDeadline(time.Now().Add(5 * time.Second))
+	n, err := c.Read(buf[:])
+	if err != nil {
+		return fmt.Errorf("Reading response failed: %w", err)
+	}
+
+	var response dnsmessage.Message
+	if err := response.Unpack(buf[:n]); err != nil {
+		return fmt.Errorf("Bad response: %w", err)
+	}
+	if response.Header.RCode != dnsmessage.RCodeNameError {
+		// We expect an NXDOMAIN response.  Anything else is surprising.
+		return fmt.Errorf("Unexpected response: %v", response.Header.RCode)
+	}
+
+	log.Printf("Report complete")
 	return nil
 }
 
