@@ -288,6 +288,12 @@ func TestFormat(t *testing.T) {
 	if err := msg.Unpack(query); err != nil {
 		t.Fatal(err)
 	}
+	if msg.Header.OpCode != 0 {
+		t.Error("Message is not a question")
+	}
+	if !msg.Header.RecursionDesired {
+		t.Error("Query doesn't request recursion")
+	}
 	question := msg.Questions[0]
 	expectedQuestion := dnsmessage.Question{
 		Name:  dnsmessage.MustNewName(name + "."),

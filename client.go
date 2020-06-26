@@ -153,6 +153,7 @@ func formatQuery(name string) ([]byte, error) {
 	binary.BigEndian.PutUint16(ecsPayload[2:], ecsPrefixLength)
 
 	msg := &dnsmessage.Message{
+		Header: dnsmessage.Header{RecursionDesired: true},
 		Questions: []dnsmessage.Question{{
 			Name:  n,
 			Type:  dnsmessage.TypeTXT,

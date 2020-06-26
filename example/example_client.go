@@ -85,7 +85,26 @@ func (s udpDNSReportSender) Send(r choir.Report) error {
 	if err != nil {
 		log.Fatal("Failed to reach resolver:", err)
 	}
-	c.Write(query)
+	if _, err := c.Write(query); err != nil {
+		log.Printf("Warning: Query failed: %v", err)
+	} else {
+		var buf [4096]byte
+		c.SetReadDeadline(time.Now().Add(5 * time.Second))
+		n, err := c.Read(buf[:])
+		if err != nil {
+			log.Printf("Reading response failed: %v", err)
+		} else {
+			var msg dnsmessage.Message
+			if err := msg.Unpack(buf[:n]); err != nil {
+				log.Printf("Bad response: %v", err)
+			} else if msg.Header.RCode != dnsmessage.RCodeNameError {
+				// We expect an NXDOMAIN response.  Anything else is surprising.
+				log.Printf("Unexpected response: %v", msg.Header.RCode)
+			} else {
+				log.Printf("Report complete")
+			}
+		}
+	}
 	c.Close()
 	return nil
 }
